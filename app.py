@@ -45,11 +45,11 @@ with pest2:
     st.header("Calculadora Aritmética y Lógica Binaria")
     col_i1, col_i2 = st.columns(2)
     with col_i1:
-        b1 = st.text_input("Binario A (Dividendo / Operando 1):", "101010", key="calc_b1")
+        b1 = st.text_input("Binario A:", "10101", key="calc_b1")
     with col_i2:
-        b2 = st.text_input("Binario B (Divisor / Operando 2):", "110", key="calc_b2")
+        b2 = st.text_input("Binario B:", "10101", key="calc_b2")
         
-    op = st.selectbox("Selecciona la operación:", ["+", "-", "×", "÷", "AND", "OR", "NOT"], key="calc_op")
+    op = st.selectbox("Operadores:", ["+", "-", "×", "÷", "AND", "OR", "NOT"], key="calc_op")
     
     if st.button("Calcular Operación Binaria"):
         if not b1 or not all(c in '01' for c in b1) or (op != "NOT" and (not b2 or not all(c in '01' for c in b2))):
@@ -74,12 +74,20 @@ with pest2:
             
             if res_dec is not None:
                 res_bin = bin(res_dec)[2:]
-                st.metric("Resultado Decimal", res_dec)
-                st.code(f"Resultado Binario: {res_bin}")
+                st.markdown(f"### Resultado Binario: {res_bin}")
+                st.markdown(f"Resultado Decimal: {res_dec}")
                 
-                st.markdown("### 📐 Estructura Visual del Proceso:")
-                if op == "÷" and d2 != 0:
-                    # Simulación visual estilo galera
+                st.markdown(f"#### 📐 ESTRUCTURA VISUAL DE LA OPERACIÓN ({op})")
+                
+                if op in ["+", "-", "×"]:
+                    simbolo_op = "+" if op == "+" else ("-" if op == "-" else "×")
+                    st.code(f"""
+        Num A:   {b1.rjust(10)}   (Decimal: {d1})
+    {simbolo_op}  Num B:   {b2.rjust(10)}   (Decimal: {d2})
+        ──────────────────────
+    = Resultado: {res_bin.rjust(10)}   (Decimal: {res_dec})
+                    """)
+                elif op == "÷" and d2 != 0:
                     indices_marcados = set()
                     curr_val = 0
                     for i, bit in enumerate(b1):
@@ -87,27 +95,28 @@ with pest2:
                         if curr_val >= d2:
                             indices_marcados.add(i)
                             curr_val -= d2
-                    
                     linea_div = "".join([bit + ("'" if i in indices_marcados else " ") for i, bit in enumerate(b1)])
                     st.code(f"""
-  {linea_div}  │ {b2}
-  {'─' * len(linea_div)}  ├─{'─' * len(b2)}
-  {' ' * len(linea_div)}  │ {res_bin}
+        Num A (Dividendo): {b1}   (Decimal: {d1})
+        Num B (Divisor)  : {b2}   (Decimal: {d2})
 
-  * Decimal Inicial (A): {d1}
-  * Decimal Divisor (B): {d2}
-  * Cociente Decimal: {d1 // d2}
-  * Residuo Decimal: {d1 % d2}
-                    """)
-                elif op == "×":
-                    st.code(f"""
-        {b1.rjust(12)}   (Decimal: {d1})
-    ×   {b2.rjust(12)}   (Decimal: {d2})
-        ──────────────
-    =   {res_bin.rjust(12)}   (Decimal: {res_dec})
+        {linea_div}  │ {b2}
+        {'─' * len(linea_div)}  ├─{'─' * len(b2)}
+        {' ' * len(linea_div)}  │ {res_bin}
+
+    = Cociente : {res_bin}   (Decimal: {res_dec})
+    = Residuo  : {bin(d1 % d2)[2:]}   (Decimal: {d1 % d2})
                     """)
                 else:
-                    st.code(f"Operación lógica/aritmética completada exitosamente entre {b1} y {b2}.")
+                    max_len = max(len(b1), len(b2))
+                    b1_n = b1.zfill(max_len)
+                    b2_n = b2.zfill(max_len)
+                    st.code(f"""
+        Num A:   {b1_n}   (Decimal: {d1})
+    {op}  Num B:   {b2_n if op != "NOT" else "----"}   (Decimal: {d2 if op != "NOT" else "-"})
+        ──────────────────────
+    = Resultado: {res_bin.zfill(max_len)}   (Decimal: {res_dec})
+                    """)
 
 # ==========================================
 # PESTAÑA 3: DASHBOARD VON NEUMANN
@@ -132,7 +141,6 @@ with pest3:
         
     st.markdown("---")
     
-    # Cálculo en vivo
     if op_cpu == "+": res_cpu = val_a + val_b
     elif op_cpu == "-": res_cpu = max(0, val_a - val_b)
     elif op_cpu == "×": res_cpu = val_a * val_b

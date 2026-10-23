@@ -42,12 +42,12 @@ with pest1:
 # PESTAÑA 2: CALCULADORA BINARIA Y LÓGICA
 # ==========================================
 with pest2:
-    st.header("Calculadora Aritmética y Lógica Binaria")
+    st.header("Calculadora Aritmética y Lógica Binaria (Paso a Paso)")
     col_i1, col_i2 = st.columns(2)
     with col_i1:
         b1 = st.text_input("Binario A:", "10101", key="calc_b1")
     with col_i2:
-        b2 = st.text_input("Binario B:", "10101", key="calc_b2")
+        b2 = st.text_input("Binario B:", "101", key="calc_b2")
         
     op = st.selectbox("Operadores:", ["+", "-", "×", "÷", "AND", "OR", "NOT"], key="calc_op")
     
@@ -77,52 +77,84 @@ with pest2:
                 st.markdown(f"### Resultado Binario: {res_bin}")
                 st.markdown(f"Resultado Decimal: {res_dec}")
                 
-                st.markdown(f"#### 📐 ESTRUCTURA VISUAL DE LA OPERACIÓN ({op})")
+                st.markdown(f"#### 📐 DESGLOSE PASO A PASO AL MARGEN ({op})")
                 
-                if op in ["+", "-", "×"]:
-                    simbolo_op = "+" if op == "+" else ("-" if op == "-" else "×")
+                # 1. SUMA Y RESTA
+                if op in ["+", "-"]:
+                    simbolo = "+" if op == "+" else "-"
+                    max_l = max(len(b1), len(b2), len(res_bin))
                     st.code(f"""
-        Num A:   {b1.rjust(10)}   (Decimal: {d1})
-    {simbolo_op}  Num B:   {b2.rjust(10)}   (Decimal: {d2})
-        ──────────────────────
-    = Resultado: {res_bin.rjust(10)}   (Decimal: {res_dec})
+        Num A:     {b1.zfill(max_l)}   (Decimal: {d1})
+    {simbolo}   Num B:     {b2.zfill(max_l)}   (Decimal: {d2})
+        ────────────────────────
+    =   Resultado: {res_bin.zfill(max_l)}   (Decimal: {res_dec})
                     """)
+                
+                # 2. MULTIPLICACIÓN (PRODUCTOS PARCIALES PASO A PASO)
+                elif op == "×":
+                    ancho = max(len(b1), len(b2), len(res_bin)) + 6
+                    lineas_mult = f"        Num A: {b1.rjust(ancho)}   (Decimal: {d1})\n"
+                    lineas_mult += f"    ×   Num B: {b2.rjust(ancho)}   (Decimal: {d2})\n"
+                    lineas_mult += f"        " + "─" * (ancho + 7) + "\n"
+                    
+                    for idx, bit in enumerate(reversed(b2)):
+                        if bit == '1':
+                            parcial = b1 + ('0' * idx)
+                        else:
+                            parcial = '0' * (len(b1) + idx)
+                        line_p = parcial.rjust(ancho)
+                        lineas_mult += f"        P.Parcial (si bit={bit}) : {line_p}\n"
+                        
+                    lineas_mult += f"        " + "─" * (ancho + 7) + "\n"
+                    lineas_mult += f"    =   Resultado: {res_bin.rjust(ancho)}   (Decimal: {res_dec})"
+                    st.code(lineas_mult)
+
+                # 3. DIVISIÓN (ESTILO GALERA CON RESTAS Y BAJADA DE DÍGITOS)
                 elif op == "÷" and d2 != 0:
-                    indices_marcados = set()
+                    cociente_str = bin(d1 // d2)[2:]
+                    residuo_dec = d1 % d2
+                    
+                    desglose_galera = f"        Num A (Dividendo): {b1}   (Decimal: {d1})\n"
+                    desglose_galera += f"        Num B (Divisor)  : {b2}   (Decimal: {d2})\n\n"
+                    desglose_galera += f"        {b1}  │ {b2}\n"
+                    desglose_galera += f"        " + "─"*len(b1) + "  ├" + "─"*len(b2) + "\n"
+                    desglose_galera += f"        " + " "*len(b1) + "  │ {cociente_str}\n\n"
+                    desglose_galera += f"        PASO A PASO DE RESTAS PARCIALES:\n"
+                    
                     curr_val = 0
                     for i, bit in enumerate(b1):
                         curr_val = (curr_val << 1) | int(bit)
                         if curr_val >= d2:
-                            indices_marcados.add(i)
+                            desglose_galera += f"          - Tomamos grupo, restamos {b2} (Dec: {d2}) ➔ Resto parcial: {bin(curr_val - d2)[2:]}\n"
                             curr_val -= d2
-                    linea_div = "".join([bit + ("'" if i in indices_marcados else " ") for i, bit in enumerate(b1)])
-                    st.code(f"""
-        Num A (Dividendo): {b1}   (Decimal: {d1})
-        Num B (Divisor)  : {b2}   (Decimal: {d2})
+                        else:
+                            desglose_galera += f"          - Bajamos bit '{bit}' ➔ Valor acumulado: {bin(curr_val)[2:]}\n"
+                            
+                    desglose_galera += f"\n    = Cociente : {cociente_str}   (Decimal: {d1 // d2})\n"
+                    desglose_galera += f"    = Residuo  : {bin(residuo_dec)[2:]}   (Decimal: {residuo_dec})"
+                    st.code(desglose_galera)
 
-        {linea_div}  │ {b2}
-        {'─' * len(linea_div)}  ├─{'─' * len(b2)}
-        {' ' * len(linea_div)}  │ {res_bin}
-
-    = Cociente : {res_bin}   (Decimal: {res_dec})
-    = Residuo  : {bin(d1 % d2)[2:]}   (Decimal: {d1 % d2})
-                    """)
+                # 4. OPERADORES LÓGICOS (AND, OR, NOT)
                 else:
                     max_len = max(len(b1), len(b2))
                     b1_n = b1.zfill(max_len)
                     b2_n = b2.zfill(max_len)
-                    st.code(f"""
-        Num A:   {b1_n}   (Decimal: {d1})
-    {op}  Num B:   {b2_n if op != "NOT" else "----"}   (Decimal: {d2 if op != "NOT" else "-"})
-        ──────────────────────
-    = Resultado: {res_bin.zfill(max_len)}   (Decimal: {res_dec})
-                    """)
+                    tabla_logica = " Posición | Bit A | Bit B | Operación Bit a Bit | Resultado\n"
+                    tabla_logica +=" ─────────┼───────┼───────┼─────────────────────┼──────────\n"
+                    for idx in range(max_len):
+                        ba = b1_n[idx]
+                        bb = b2_n[idx] if op != "NOT" else "-"
+                        bres = res_bin.zfill(max_len)[idx]
+                        pos = max_len - 1 - idx
+                        desc = f"{ba} {op} {bb}" if op != "NOT" else f"NOT {ba}"
+                        tabla_logica += f"   2^{pos:<2}   |   {ba}   |   {bb}   |     {desc:<15} |     {bres}\n"
+                    st.code(tabla_logica)
 
 # ==========================================
-# PESTAÑA 3: DASHBOARD VON NEUMANN
+# PESTAÑA 3: DASHBOARD VON NEUMANN INTERACTIVO
 # ==========================================
 with pest3:
-    st.header("⚡ Simulador CPU Von Neumann con Fases")
+    st.header("⚡ Simulador Interactivo CPU Von Neumann")
     
     col_cpu1, col_cpu2 = st.columns(2)
     with col_cpu1:
@@ -131,29 +163,66 @@ with pest3:
         op_cpu = st.selectbox("Operación ALU", ["+", "-", "×", "÷"], key="cpu_op")
         
     with col_cpu2:
-        st.markdown("### Ciclo de Instrucción")
-        fase_cpu = st.radio("Selecciona la fase activa:", [
-            "1. FETCH (Búsqueda en RAM - Ámbar)",
-            "2. DECODE (Decodificación UC - Azul)",
-            "3. EXECUTE (Cálculo en ALU - Púrpura)",
-            "4. STORE (Almacenamiento AC - Verde)"
-        ])
-        
+        st.markdown("### Control de Ciclo de Instrucción")
+        if "fase_activa" not in st.session_state:
+            st.session_state.fase_activa = 1
+            
+        fase_opciones = ["1. FETCH (Búsqueda)", "2. DECODE (Decodificación)", "3. EXECUTE (Ejecución ALU)", "4. STORE (Almacenamiento)"]
+        fase_seleccionada = st.radio("Avanzar paso a paso:", fase_opciones, index=st.session_state.fase_activa - 1)
+        st.session_state.fase_activa = fase_opciones.index(fase_seleccionada) + 1
+
     st.markdown("---")
     
+    # Cálculos para la CPU
     if op_cpu == "+": res_cpu = val_a + val_b
     elif op_cpu == "-": res_cpu = max(0, val_a - val_b)
     elif op_cpu == "×": res_cpu = val_a * val_b
     else: res_cpu = (val_a // val_b) if val_b != 0 else 0
     
-    b_a_bin = bin(val_a)[2:].zfill(8)
-    b_b_bin = bin(val_b)[2:].zfill(8)
+    b_a = bin(val_a)[2:].zfill(8)
+    b_b = bin(val_b)[2:].zfill(8)
     
-    if fase_cpu.startswith("1"):
-        st.info(f"**[FETCH]** El Contador de Programa (PC) apunta a la celda 0x42 de la RAM. La RAM envía la orden `{op_cpu}` y los operandos A=`{b_a_bin}`, B=`{b_b_bin}` hacia el Registro de Instrucción (IR).")
-    elif fase_cpu.startswith("2"):
-        st.info(f"**[DECODE]** La Unidad de Control (UC) decodifica la instrucción `{op_cpu}` y prepara los buses internos de datos hacia la ALU.")
-    elif fase_cpu.startswith("3"):
-        st.info(f"**[EXECUTE]** La ALU procesa la operación aritmética: `{val_a} {op_cpu} {val_b}` obteniendo el resultado temporal `{res_cpu}`.")
-    else:
-        st.success(f"**[STORE]** El resultado final `{res_cpu}` (Binario: `{bin(res_cpu)[2:]}`) se guarda de forma permanente en el Acumulador (AC).")
+    # Interfaz interactiva enriquecida por fase
+    fase = st.session_state.fase_activa
+    
+    col_a, col_b = st.columns(2)
+    with col_a:
+        st.markdown("#### 🧠 Estado de los Registros Internos")
+        st.code(f"""
+  [ PC ] Program Counter : 0x0042
+  [MAR ] Memoria Addr    : 0x01FA
+  [MDR ] Memoria Data    : OP={op_cpu}, A={val_a}, B={val_b}
+  [ IR ] Inst. Register  : EXECUTING_{op_cpu}
+  [ALU ] Procesamiento   : {val_a} {op_cpu} {val_b}
+  [ AC ] Acumulador      : {res_cpu if fase >= 4 else 'Vacío / En proceso'}
+        """)
+        
+    with col_b:
+        st.markdown("#### 🔍 Explicación Interactiva del Momento")
+        if fase == 1:
+            st.info("""
+            **Fase 1: FETCH (Búsqueda de la Instrucción en RAM)**
+            * El **PC** (Contador de Programa) indica la dirección de memoria actual (`0x0042`).
+            * El **MAR** carga la dirección y el **MDR** recupera desde la RAM los operandos `A = """ + b_a + f"""` y `B = """ + b_b + f"""`.
+            * Todo viaja por el Bus de Sistema hacia el **IR** (Registro de Instrucción).
+            """)
+        elif fase == 2:
+            st.warning("""
+            **Fase 2: DECODE (Decodificación en la Unidad de Control)**
+            * La **Unidad de Control (UC)** analiza el código de operación (`{op_cpu}`).
+            * Interpreta que se requiere activar los circuitos aritméticos de la **ALU**.
+            * Configura los multiplexores internos para rutear los bits de los operandos.
+            """)
+        elif fase == 3:
+            st.error("""
+            **Fase 3: EXECUTE (Ejecución en la ALU)**
+            * La **ALU** (Unidad Aritmética Lógica) realiza el cálculo físico a nivel de compuertas lógicas.
+            * Operación en curso: **`{val_a} {op_cpu} {val_b}`**.
+            * Resultado temporal obtenido en circuitos internos: **`{res_cpu}`** (Binario: `{bin(res_cpu)[2:]}`).
+            """)
+        else:
+            st.success(("""
+            **Fase 4: STORE (Almacenamiento de Resultados)**
+            * El resultado final de la operación (`{res_cpu}`) se escribe y deposita de forma definitiva en el **Acumulador (AC)**.
+            * Queda disponible para futuras instrucciones o para ser exportado a memoria RAM o pantalla.
+            """))

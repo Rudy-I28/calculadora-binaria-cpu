@@ -1,31 +1,100 @@
 import streamlit as st
 
-st.set_page_config(page_title="Suite Educativa: Sistemas Numéricos y CPU", layout="wide")
+# Configuración inicial de la página
+st.set_page_config(
+    page_title="Suite Educativa: Sistemas Numéricos y CPU", 
+    layout="wide",
+    initial_sidebar_state="collapsed"
+)
+
+# --- ESTILOS CSS PERSONALIZADOS (PALETA SUAVE Y VISUAL) ---
+st.markdown("""
+    <style>
+    /* Fondo general de la aplicación */
+    .stApp {
+        background-color: #f8fafc;
+        color: #1e293b;
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+    
+    /* Contenedores / Tarjetas estéticas */
+    div.stTabs [data-baseweb="tab-list"] {
+        gap: 8px;
+    }
+    
+    div.stTabs [data-baseweb="tab"] {
+        background-color: #e2e8f0;
+        border-radius: 6px 6px 0px 0px;
+        color: #334155;
+        font-weight: 600;
+        padding: 10px 20px;
+    }
+    
+    div.stTabs [aria-selected="true"] {
+        background-color: #4f46e5 !important;
+        color: white !important;
+    }
+    
+    /* Cajas de código personalizadas */
+    pre {
+        background-color: #ffffff !important;
+        border: 1px solid #cbd5e1 !important;
+        border-radius: 8px !important;
+        padding: 15px !important;
+        color: #0f172a !important;
+        font-family: 'Consolas', monospace !important;
+    }
+    </style>
+""", unsafe_allow_html=True)
 
 st.title("⚡ Suite Educativa Interactiva: Sistemas Numéricos y CPU Pro")
+st.markdown("Herramienta didáctica integral para comprender la conversión numérica, la aritmética binaria paso a paso y la arquitectura interna de un computador.")
 
 # Pestañas principales
 pest1, pest2, pest3 = st.tabs([
-    "Conversor Decimal ⇄ Binario", 
-    "Calculadora Binaria y Lógica", 
-    "Dashboard CPU Von Neumann"
+    "🧮 Conversor Decimal ⇄ Binario", 
+    "🔢 Calculadora Binaria y Lógica", 
+    "⚙️ Dashboard CPU Von Neumann"
 ])
 
 # ==========================================
 # PESTAÑA 1: CONVERSOR UNIFICADO
 # ==========================================
 with pest1:
-    st.header("Conversor Bidireccional (Decimal, Texto ASCII y Binario)")
+    st.subheader("Conversor Bidireccional (Decimal, Texto ASCII y Binario)")
     tipo_conv = st.selectbox("Selecciona el tipo de conversión", ["Decimal a Binario / ASCII", "Binario a Decimal"], key="conv_tipo")
-    valor_conv = st.text_input("Ingresa un valor:", "21", key="conv_val")
+    valor_conv = st.text_input("Ingresa un valor (número decimal o texto):", "21", key="conv_val")
     
-    if st.button("Procesar Conversión"):
+    if st.button("Procesar Conversión", type="primary"):
         if not valor_conv.strip():
             st.warning("Por favor, ingresa un valor.")
         elif "Decimal" in tipo_conv:
             if valor_conv.isdigit():
                 dec = int(valor_conv)
-                st.success(f"Número Decimal: {dec} ➔ Binario: {bin(dec)[2:]}")
+                st.success(f"Número Decimal Principal: {dec} ➔ Binario: {bin(dec)[2:]}")
+                
+                st.markdown("### 📐 Método de Divisiones Sucesivas entre 2 (Paso a Paso)")
+                temp = dec
+                pasos_data = []
+                
+                if temp == 0:
+                    pasos_data.append({"Dividendo": 0, "Cociente": 0, "Residuo": 0})
+                    bin_str = "0"
+                else:
+                    bin_str = ""
+                    while temp > 0:
+                        cociente = temp // 2
+                        residuo = temp % 2
+                        pasos_data.append({"Dividendo": temp, "Cociente": cociente, "Residuo": residuo})
+                        bin_str = str(residuo) + bin_str
+                        temp //= 2
+                        
+                desglose_div = f"  Proceso de conversión para el número decimal {dec}:\n\n"
+                for idx, p in enumerate(pasos_data):
+                    desglose_div += f"    Paso {idx+1}: {p['Dividendo']} ÷ 2  ➔  Cociente = {p['Cociente']}  |  Residuo = {p['Residuo']}\n"
+                
+                st.code(desglose_div)
+                st.info(f"👉 Leyendo los residuos de **abajo hacia arriba**, obtenemos el binario final: **{bin_str}**")
             else:
                 st.write("### Conversión de caracteres ASCII:")
                 for c in valor_conv:
@@ -42,7 +111,7 @@ with pest1:
 # PESTAÑA 2: CALCULADORA BINARIA Y LÓGICA
 # ==========================================
 with pest2:
-    st.header("Calculadora Aritmética y Lógica Binaria (Paso a Paso)")
+    st.subheader("Calculadora Aritmética y Lógica Binaria (Paso a Paso)")
     col_i1, col_i2 = st.columns(2)
     with col_i1:
         b1 = st.text_input("Binario A:", "10101", key="calc_b1")
@@ -51,7 +120,7 @@ with pest2:
         
     op = st.selectbox("Operadores:", ["+", "-", "×", "÷", "AND", "OR", "NOT"], key="calc_op")
     
-    if st.button("Calcular Operación Binaria"):
+    if st.button("Calcular Operación Binaria", type="primary"):
         if not b1 or not all(c in '01' for c in b1) or (op != "NOT" and (not b2 or not all(c in '01' for c in b2))):
             st.error("Por favor, ingresa cadenas binarias válidas (0s y 1s).")
         else:
@@ -75,7 +144,7 @@ with pest2:
             if res_dec is not None:
                 res_bin = bin(res_dec)[2:]
                 st.markdown(f"### Resultado Binario: {res_bin}")
-                st.markdown(f"Resultado Decimal: {res_dec}")
+                st.markdown(f"**Resultado Decimal:** {res_dec}")
                 
                 st.markdown(f"#### 📐 DESGLOSE PASO A PASO AL MARGEN ({op})")
                 
@@ -90,7 +159,7 @@ with pest2:
     =   Resultado: {res_bin.zfill(max_l)}   (Decimal: {res_dec})
                     """)
                 
-                # 2. MULTIPLICACIÓN (PRODUCTOS PARCIALES PASO A PASO)
+                # 2. MULTIPLICACIÓN
                 elif op == "×":
                     ancho = max(len(b1), len(b2), len(res_bin)) + 6
                     lineas_mult = f"        Num A: {b1.rjust(ancho)}   (Decimal: {d1})\n"
@@ -109,7 +178,7 @@ with pest2:
                     lineas_mult += f"    =   Resultado: {res_bin.rjust(ancho)}   (Decimal: {res_dec})"
                     st.code(lineas_mult)
 
-                # 3. DIVISIÓN (ESTILO GALERA CON RESTAS Y BAJADA DE DÍGITOS)
+                # 3. DIVISIÓN
                 elif op == "÷" and d2 != 0:
                     cociente_str = bin(d1 // d2)[2:]
                     residuo_dec = d1 % d2
@@ -118,7 +187,7 @@ with pest2:
                     desglose_galera += f"        Num B (Divisor)  : {b2}   (Decimal: {d2})\n\n"
                     desglose_galera += f"        {b1}  │ {b2}\n"
                     desglose_galera += f"        " + "─"*len(b1) + "  ├" + "─"*len(b2) + "\n"
-                    desglose_galera += f"        " + " "*len(b1) + "  │ {cociente_str}\n\n"
+                    desglose_galera += f"        " + " "*len(b1) + f"  │ {cociente_str}\n\n"
                     desglose_galera += f"        PASO A PASO DE RESTAS PARCIALES:\n"
                     
                     curr_val = 0
@@ -134,7 +203,7 @@ with pest2:
                     desglose_galera += f"    = Residuo  : {bin(residuo_dec)[2:]}   (Decimal: {residuo_dec})"
                     st.code(desglose_galera)
 
-                # 4. OPERADORES LÓGICOS (AND, OR, NOT)
+                # 4. OPERADORES LÓGICOS
                 else:
                     max_len = max(len(b1), len(b2))
                     b1_n = b1.zfill(max_len)
@@ -154,7 +223,7 @@ with pest2:
 # PESTAÑA 3: DASHBOARD VON NEUMANN INTERACTIVO
 # ==========================================
 with pest3:
-    st.header("⚡ Simulador Interactivo CPU Von Neumann")
+    st.subheader("⚙️ Simulador Interactivo CPU Von Neumann")
     
     col_cpu1, col_cpu2 = st.columns(2)
     with col_cpu1:
@@ -173,7 +242,6 @@ with pest3:
 
     st.markdown("---")
     
-    # Cálculos para la CPU
     if op_cpu == "+": res_cpu = val_a + val_b
     elif op_cpu == "-": res_cpu = max(0, val_a - val_b)
     elif op_cpu == "×": res_cpu = val_a * val_b
@@ -182,7 +250,6 @@ with pest3:
     b_a = bin(val_a)[2:].zfill(8)
     b_b = bin(val_b)[2:].zfill(8)
     
-    # Interfaz interactiva enriquecida por fase
     fase = st.session_state.fase_activa
     
     col_a, col_b = st.columns(2)
@@ -200,29 +267,29 @@ with pest3:
     with col_b:
         st.markdown("#### 🔍 Explicación Interactiva del Momento")
         if fase == 1:
-            st.info("""
+            st.info(f"""
             **Fase 1: FETCH (Búsqueda de la Instrucción en RAM)**
-            * El **PC** (Contador de Programa) indica la dirección de memoria actual (`0x0042`).
-            * El **MAR** carga la dirección y el **MDR** recupera desde la RAM los operandos `A = """ + b_a + f"""` y `B = """ + b_b + f"""`.
+            * El **PC** (Contador de Programa) apunta a la dirección de memoria actual (`0x0042`).
+            * El **MAR** carga la dirección y el **MDR** recupera desde la RAM los operandos `A = {b_a}` y `B = {b_b}`.
             * Todo viaja por el Bus de Sistema hacia el **IR** (Registro de Instrucción).
             """)
         elif fase == 2:
-            st.warning("""
+            st.warning(f"""
             **Fase 2: DECODE (Decodificación en la Unidad de Control)**
             * La **Unidad de Control (UC)** analiza el código de operación (`{op_cpu}`).
             * Interpreta que se requiere activar los circuitos aritméticos de la **ALU**.
             * Configura los multiplexores internos para rutear los bits de los operandos.
             """)
         elif fase == 3:
-            st.error("""
+            st.error(f"""
             **Fase 3: EXECUTE (Ejecución en la ALU)**
             * La **ALU** (Unidad Aritmética Lógica) realiza el cálculo físico a nivel de compuertas lógicas.
             * Operación en curso: **`{val_a} {op_cpu} {val_b}`**.
             * Resultado temporal obtenido en circuitos internos: **`{res_cpu}`** (Binario: `{bin(res_cpu)[2:]}`).
             """)
         else:
-            st.success(("""
+            st.success(f"""
             **Fase 4: STORE (Almacenamiento de Resultados)**
             * El resultado final de la operación (`{res_cpu}`) se escribe y deposita de forma definitiva en el **Acumulador (AC)**.
             * Queda disponible para futuras instrucciones o para ser exportado a memoria RAM o pantalla.
-            """))
+            """)
